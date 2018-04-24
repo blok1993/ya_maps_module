@@ -273,6 +273,7 @@ ymaps.modules.define('ShapeLayer', [
         },
 
         __renderTile: function (tileNumber, zoom) {
+            var renderCounter = 0;
             var projection = this.__projection,
                 x = tileNumber[0],
                 y = tileNumber[1],
@@ -364,8 +365,13 @@ ymaps.modules.define('ShapeLayer', [
 
                             break;
                         case 'hexagon':
+                            renderCounter++;
+
+                            //Смещение для каждой нечетной строки
+                            var strOffset = renderCounter % 15 === 0 ? 2 : 1.5;
+
                             var center = {
-                                x: 1.5 * Math.floor(position[0] - size * dpr / 2),
+                                x: strOffset * Math.floor(position[0] - size * dpr / 2),
                                 y: 1.5 * Math.floor(position[1] - size * dpr / 2)
                             };
 
@@ -383,7 +389,7 @@ ymaps.modules.define('ShapeLayer', [
                                 context.beginPath();
 
                                 for (var i = 0; i < 6; i++) {
-                                    var cornerCoords = hex_corner(center, size - 2, i);
+                                    var cornerCoords = hex_corner(center, size - 4, i);
 
                                     if (i > 0) {
                                         context.lineTo(cornerCoords[0], cornerCoords[1]);

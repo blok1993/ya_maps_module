@@ -8,10 +8,11 @@
         ymaps.ready({
                 require: ['ShapeLayer'],
 
-                successCallback: () => {
+            successCallback: () => {
                 $.ajax('data_test.json', {
                     success: function (data) {
-                        buildGrid(data);
+                        //buildGrid(data);
+                        buildHexagonGrid(data);
                         //buildFixedGrid(data);
                         //buildFlexGrid(data);
                     }
@@ -19,17 +20,195 @@
                 $.ajax('stops.json', {
                     success: function(data) {
                         //buildCircles(data);
+                        //buildHexagonGrid(data);
                     }
                 });
 
-        function buildFixedGrid (data) {
-            var map = new ymaps.Map('map_fixed_grid', {
-                    center: [37.6, 55.75],
-                    zoom: 8
-                }, {
-                    avoidFractionalZoom: false
-                }),
-                heatmap = new ymaps.ShapeLayer(Object.keys(data).map((key) => {
+                function buildFixedGrid (data) {
+                    var map = new ymaps.Map('map_fixed_grid', {
+                            center: [37.6, 55.75],
+                            zoom: 8
+                        }, {
+                            avoidFractionalZoom: false
+                        }),
+                        heatmap = new ymaps.ShapeLayer(Object.keys(data).map((key) => {
+                                return {
+                                    type: 'Feature',
+                                    geometry: {
+                                        type: 'Point',
+                                        coordinates: key.split(/,\s*/).map(Number).reverse()
+                                    },
+                                    properties: {
+                                        weight: Number(data[key].total_count)
+                                    }
+                                };
+                }), {
+                        shapeForm: 'circles',
+                            clusterize: true,
+                            centroidMode: 'float',
+                            gridSize: Math.pow(2, -4),
+                            fillColor: function (cluster, zoom) {
+                            return 'rgba(40, 80 ,40, 0.4)';
+                        },
+                        size: function (cluster, zoom) {
+                            var weight = cluster.objects.reduce((counter, object) => {
+                                    return counter + object.properties.weight;
+                        }, 0);
+                            return weight / (300 * Math.pow(2, 13 - zoom));
+                        }
+                    });
+
+                    map.layers.add(heatmap);
+
+                    map.events.add('click', (e) => {
+                        var objects = heatmap.getObjectsInPosition(e.get('coords'));
+                        if (objects.length) {
+                            map.balloon.open(
+                                objects[0].geometry.coordinates,
+                                '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
+                            );
+                        }
+                    });
+                }
+
+                function buildFlexGrid (data) {
+                    var map = new ymaps.Map('map_flex_grid', {
+                            center: [37.6, 55.75],
+                            zoom: 8
+                        }, {
+                            avoidFractionalZoom: false
+                        }),
+                        heatmap = new ymaps.ShapeLayer(Object.keys(data).map((key) => {
+                                return {
+                                    type: 'Feature',
+                                    geometry: {
+                                        type: 'Point',
+                                        coordinates: key.split(/,\s*/).map(Number).reverse()
+                                    },
+                                    properties: {
+                                        weight: Number(data[key].total_count)
+                                    }
+                                };
+                        }), {
+                        shapeForm: 'circles',
+                            clusterize: true,
+                            gridMode: 'flexible',
+                            gridSize: function (zoom) {
+                            return Math.pow(1.5, zoom - 2);
+                        },
+                        fillColor: function (cluster) {
+                            var weight = cluster.objects.reduce((counter, object) => {
+                                    return counter + object.properties.weight;
+                        }, 0);
+                            return 'rgba(40,' +
+                                Math.min(Math.round(weight / 50), 255) +
+                                ',40,0.3)';
+                        }
+                    });
+
+                    map.layers.add(heatmap);
+
+                    map.events.add('click', (e) => {
+                        var objects = heatmap.getObjectsInPosition(e.get('coords'));
+                        if (objects.length) {
+                            map.balloon.open(
+                                objects[0].geometry.coordinates,
+                                '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
+                            );
+                        }
+                    });
+                }
+
+                function buildGrid (data) {
+                    var map = new ymaps.Map('map_grid', {
+                            center: [37.6, 55.75],
+                            zoom: 8
+                        }, {
+                            avoidFractionalZoom: false
+                        }),
+                        heatmap = new ymaps.ShapeLayer(Object.keys(data).map((key) => {
+                            return {
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'Point',
+                                    coordinates: key.split(/,\s*/).map(Number).reverse()
+                                },
+                                properties: {
+                                    weight: Number(data[key].total_count)
+                                }
+                            };
+                        }), {
+                            shapeForm: 'squares',
+                            clusterize: true,
+                            gridSize: 27 * Math.pow(2, -11),
+                            fillColor: function (cluster) {
+                                var weight = cluster.objects.reduce((counter, object) => {
+                                    return counter + object.properties.weight;
+                                }, 0);
+                                return 'rgba(0,' +
+                                    Math.min(Math.round(weight / 15), 255) +
+                                    ',0,0.3)';
+                            }
+                        });
+
+                    map.layers.add(heatmap);
+
+                    map.events.add('click', (e) => {
+                        var objects = heatmap.getObjectsInPosition(e.get('coords'));
+                        if (objects.length) {
+                            map.balloon.open(
+                                objects[0].geometry.coordinates,
+                                '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
+                            );
+                        }
+                    });
+                }
+
+                function buildCircles (data) {
+                    var map = new ymaps.Map('map_circles', {
+                        center: [37.6, 55.75],
+                        zoom: 10
+                    }, {
+                        avoidFractionalZoom: false
+                    }),
+                    heatmap = new ymaps.ShapeLayer(data.features.map((feature) => {
+                            return {
+                                type: 'Feature',
+                                geometry: feature.geometry,
+                                properties: Object.assign({}, feature.properties, {
+                                    weight: Number(feature.properties.stat[0][9])
+                                })
+                            };
+                        }), {
+                        shapeForm: 'circles',
+                            fillColor: 'rgba(50, 150, 50, 0.6)',
+                            size: function (feature, zoom) {
+                                return feature.properties.weight * Math.pow(1.4, zoom - 12);
+                            }
+                        }
+                    );
+
+                    map.layers.add(heatmap);
+
+                    map.events.add('click', (e) => {
+                        var objects = heatmap.getObjectsInPosition(e.get('coords'));
+                        if (objects.length) {
+                            map.balloon.open(
+                                objects[0].geometry.coordinates,
+                                '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
+                            );
+                        }
+                    });
+                }
+
+                function buildHexagonGrid (data) {
+                    var map = new ymaps.Map('map_hexagon_grid', {
+                        center: [37.6, 55.75],
+                        zoom: 8
+                    }, {
+                        avoidFractionalZoom: false
+                    }),
+                    heatmap = new ymaps.ShapeLayer(Object.keys(data).map((key) => {
                         return {
                             type: 'Feature',
                             geometry: {
@@ -40,164 +219,36 @@
                                 weight: Number(data[key].total_count)
                             }
                         };
-        }), {
-                shapeForm: 'circles',
-                    clusterize: true,
-                    centroidMode: 'float',
-                    gridSize: Math.pow(2, -4),
-                    fillColor: function (cluster, zoom) {
-                    return 'rgba(40, 80 ,40, 0.4)';
-                },
-                size: function (cluster, zoom) {
-                    var weight = cluster.objects.reduce((counter, object) => {
-                            return counter + object.properties.weight;
-                }, 0);
-                    return weight / (300 * Math.pow(2, 13 - zoom));
+                    }), {
+                        shapeForm: 'hexagon',
+                        clusterize: true,
+                        gridMode: 'flexible',
+                        gridSize: function (zoom) {
+                            return Math.pow(1.5, zoom - 2);
+                        },
+                        fillColor: function (cluster) {
+                            var weight = cluster.objects.reduce((counter, object) => {
+                                return counter + object.properties.weight;
+                            }, 0);
+                            return 'rgba(40,' +
+                                Math.min(Math.round(weight / 50), 255) +
+                                ',40,0.3)';
+                        }
+                    });
+
+                    map.layers.add(heatmap);
+
+                    map.events.add('click', (e) => {
+                        var objects = heatmap.getObjectsInPosition(e.get('coords'));
+                        if (objects.length) {
+                            map.balloon.open(
+                                objects[0].geometry.coordinates,
+                                '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
+                            );
+                        }
+                    });
                 }
-            });
-
-            map.layers.add(heatmap);
-
-            map.events.add('click', (e) => {
-                var objects = heatmap.getObjectsInPosition(e.get('coords'));
-            if (objects.length) {
-                map.balloon.open(
-                    objects[0].geometry.coordinates,
-                    '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
-                );
             }
-        });
-        }
-
-        function buildFlexGrid (data) {
-            var map = new ymaps.Map('map_flex_grid', {
-                    center: [37.6, 55.75],
-                    zoom: 8
-                }, {
-                    avoidFractionalZoom: false
-                }),
-                heatmap = new ymaps.ShapeLayer(Object.keys(data).map((key) => {
-                        return {
-                            type: 'Feature',
-                            geometry: {
-                                type: 'Point',
-                                coordinates: key.split(/,\s*/).map(Number).reverse()
-                            },
-                            properties: {
-                                weight: Number(data[key].total_count)
-                            }
-                        };
-        }), {
-                shapeForm: 'circles',
-                    clusterize: true,
-                    gridMode: 'flexible',
-                    gridSize: function (zoom) {
-                    return Math.pow(1.5, zoom - 2);
-                },
-                fillColor: function (cluster) {
-                    var weight = cluster.objects.reduce((counter, object) => {
-                            return counter + object.properties.weight;
-                }, 0);
-                    return 'rgba(40,' +
-                        Math.min(Math.round(weight / 50), 255) +
-                        ',40,0.3)';
-                }
-            });
-
-            map.layers.add(heatmap);
-
-            map.events.add('click', (e) => {
-                var objects = heatmap.getObjectsInPosition(e.get('coords'));
-            if (objects.length) {
-                map.balloon.open(
-                    objects[0].geometry.coordinates,
-                    '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
-                );
-            }
-        });
-        }
-
-        function buildGrid (data) {
-            var map = new ymaps.Map('map_grid', {
-                    center: [37.6, 55.75],
-                    zoom: 8
-                }, {
-                    avoidFractionalZoom: false
-                }),
-                heatmap = new ymaps.ShapeLayer(Object.keys(data).map((key) => {
-                        return {
-                            type: 'Feature',
-                            geometry: {
-                                type: 'Point',
-                                coordinates: key.split(/,\s*/).map(Number).reverse()
-                            },
-                            properties: {
-                                weight: Number(data[key].total_count)
-                            }
-                        };
-        }), {
-                shapeForm: 'hexagon',
-                    clusterize: true,
-                    gridSize: 27 * Math.pow(2, -11),
-                    fillColor: function (cluster) {
-                    var weight = cluster.objects.reduce((counter, object) => {
-                            return counter + object.properties.weight;
-                }, 0);
-                    return 'rgba(0,' +
-                        Math.min(Math.round(weight / 15), 255) +
-                        ',0,0.3)';
-                }
-            });
-
-            map.layers.add(heatmap);
-
-            map.events.add('click', (e) => {
-                var objects = heatmap.getObjectsInPosition(e.get('coords'));
-            if (objects.length) {
-                map.balloon.open(
-                    objects[0].geometry.coordinates,
-                    '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
-                );
-            }
-        });
-        }
-
-        function buildCircles (data) {
-            var map = new ymaps.Map('map_circles', {
-                    center: [37.6, 55.75],
-                    zoom: 10
-                }, {
-                    avoidFractionalZoom: false
-                }),
-                heatmap = new ymaps.ShapeLayer(data.features.map((feature) => {
-                        return {
-                            type: 'Feature',
-                            geometry: feature.geometry,
-                            properties: Object.assign({}, feature.properties, {
-                                weight: Number(feature.properties.stat[0][9])
-                            })
-                        };
-        }), {
-                shapeForm: 'circles',
-                    fillColor: 'rgba(50, 150, 50, 0.6)',
-                    size: function (feature, zoom) {
-                    return feature.properties.weight * Math.pow(1.4, zoom - 12);
-                }
-            });
-
-            map.layers.add(heatmap);
-
-            map.events.add('click', (e) => {
-                var objects = heatmap.getObjectsInPosition(e.get('coords'));
-            if (objects.length) {
-                map.balloon.open(
-                    objects[0].geometry.coordinates,
-                    '<pre>' + JSON.stringify(objects, null, 4) + '</pre>'
-                );
-            }
-        });
-        }
-        }
         });
     </script>
     <style>
@@ -208,16 +259,22 @@
             padding: 0;
         }
 
-        #map_grid, #map_circles, #map_fixed_grid, #map_flex_grid {
-            float: left;
+        /*#map_grid, #map_circles, #map_fixed_grid, #map_flex_grid {*/
+            /*float: left;*/
             /*width: 25%;*/
-            width: 50%;
+            /*height: 100%;*/
+        /*}*/
+
+        #map_hexagon_grid {
+            float: left;
+            width: 100%;
             height: 100%;
         }
     </style>
 </head><body>
 <!--<div id="map_fixed_grid"></div>-->
 <!--<div id="map_circles"></div>-->
-<div id="map_grid"></div>
+<!--<div id="map_grid"></div>-->
 <!--<div id="map_flex_grid"></div>-->
+<div id="map_hexagon_grid"></div>
 </body></html>
