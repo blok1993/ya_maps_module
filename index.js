@@ -371,9 +371,14 @@ ymaps.modules.define('ShapeLayer', [
                             //Смещение для каждой нечетной строки
                             var strOffset = (renderCounter % 15 === 0 ? 2.265 : Math.sqrt(3));
 
+                            // var center = {
+                            //     x: Math.floor(strOffset *  (position[0] - size * dpr / 2)),
+                            //     y: 1.5 * Math.floor((position[1] - size * dpr / 2))
+                            // };
+
                             var center = {
-                                x: Math.floor(strOffset *  (position[0] - size * dpr / 2)),
-                                y: 1.5 * Math.floor((position[1] - size * dpr / 2))
+                                x: Math.floor((position[0] - size * dpr / 2)),
+                                y: Math.floor((position[1] - size * dpr / 2))
                             };
 
                             context.fillStyle = fillColor;
@@ -381,7 +386,7 @@ ymaps.modules.define('ShapeLayer', [
                             function hex_corner(center, size, i) {
                                 var angle_deg = 60 * i + 30;
                                 var angle_rad = Math.PI / 180 * angle_deg;
-                                return [center.x + size * Math.cos(angle_rad), center.y + size * Math.sin(angle_rad)];
+                                return [center.x + size / Math.sqrt(3) * Math.cos(angle_rad), center.y + size / Math.sqrt(3) * Math.sin(angle_rad)];
                             }
 
                             if (size >= 8 && size < tileSize) {
