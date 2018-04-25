@@ -367,12 +367,13 @@ ymaps.modules.define('ShapeLayer', [
                         case 'hexagon':
                             renderCounter++;
 
+                            //TODO
                             //Смещение для каждой нечетной строки
-                            var strOffset = renderCounter % 15 === 0 ? 2 : 1.5;
+                            var strOffset = (renderCounter % 15 === 0 ? 2.265 : Math.sqrt(3));
 
                             var center = {
-                                x: strOffset * Math.floor(position[0] - size * dpr / 2),
-                                y: 1.5 * Math.floor(position[1] - size * dpr / 2)
+                                x: Math.floor(strOffset *  (position[0] - size * dpr / 2)),
+                                y: 1.5 * Math.floor((position[1] - size * dpr / 2))
                             };
 
                             context.fillStyle = fillColor;
@@ -384,12 +385,12 @@ ymaps.modules.define('ShapeLayer', [
                             }
 
                             if (size >= 8 && size < tileSize) {
-                                context.lineWidth = 1;
+                                context.lineWidth = 2;
                                 context.strokeWidth = 2;
                                 context.beginPath();
 
                                 for (var i = 0; i < 6; i++) {
-                                    var cornerCoords = hex_corner(center, size - 4, i);
+                                    var cornerCoords = hex_corner(center, size, i);
 
                                     if (i > 0) {
                                         context.lineTo(cornerCoords[0], cornerCoords[1]);
