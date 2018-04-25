@@ -204,7 +204,7 @@
                 function buildHexagonGrid (data) {
                     var map = new ymaps.Map('map_hexagon_grid', {
                         center: [37.6, 55.75],
-                        zoom: 9
+                        zoom: 10
                     }, {
                         avoidFractionalZoom: false
                     }),
@@ -230,9 +230,8 @@
                             var weight = cluster.objects.reduce((counter, object) => {
                                 return counter + object.properties.weight;
                             }, 0);
-                            return 'rgba(40,' +
-                                Math.min(Math.round(weight / 50), 255) +
-                                ',40,0.3)';
+                            return 'rgba(' + Math.min(Math.round(weight / 50), 255) +
+                                ',20,20,0.4)';
                         }
                     });
 
